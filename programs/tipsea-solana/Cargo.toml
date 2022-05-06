@@ -19,4 +19,6 @@ default = []
 overflow-checks = true
 
 [dependencies]
-anchor-lang = "0.24.2"
+anchor-lang = "0.22.1"
+anchor-spl = "0.22.1"
+mpl-token-metadata = {version = "1.2.5", features = ["no-entrypoint"]}
