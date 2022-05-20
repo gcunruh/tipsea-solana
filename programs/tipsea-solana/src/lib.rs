@@ -4,7 +4,7 @@ use anchor_spl::token;
 use anchor_spl::token::{MintTo, Token};
 use mpl_token_metadata::instruction::{create_master_edition_v3, create_metadata_accounts_v2};
 
-declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+declare_id!("4HMaj1cDxfbunTUW7Nrz7j1nKQRKqGoUt8r7pFQsAJd5");
 
 #[program]
 pub mod tipsea_solana {
@@ -15,6 +15,7 @@ pub mod tipsea_solana {
         creator_key: Pubkey,
         uri: String,
         title: String,
+        symbol: String,
     ) -> Result<()> {
         msg!("Initializing NFT Mint");
         let cpi_accounts =  MintTo {
@@ -25,10 +26,13 @@ pub mod tipsea_solana {
         msg!("CPI Accounts Assigned");
         let cpi_program = ctx.accounts.token_program.to_account_info();
         msg!("CPI Program Assigned");
-        let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts)
-        msg!("CPI Context Assigned")
-        token::mint_to(cpi_ctx, 1)?;
-        msg!("Token Minted")
+        let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
+        msg!("CPI Context Assigned");
+        let result = token::mint_to(cpi_ctx, 1);
+        if let Err(_) = result {
+            return Err(error!(ErrorCode::MintFailed));
+        }
+        msg!("Token Minted");
         let account_info = vec![
             ctx.accounts.metadata.to_account_info(),
             ctx.accounts.mint.to_account_info(),
@@ -39,7 +43,7 @@ pub mod tipsea_solana {
             ctx.accounts.system_program.to_account_info(),
             ctx.accounts.rent.to_account_info(),
         ];
-        msg!("Account Info Assigned")
+        msg!("Account Info Assigned");
         let creator = vec![
             mpl_token_metadata::state::Creator {
                 address: creator_key,
@@ -53,7 +57,7 @@ pub mod tipsea_solana {
             },
         ];
         msg!("Creator Assigned");
-        let symbol = std::string::ToString::to_string("symb");
+        let result = 
         invoke(
             &create_metadata_accounts_v2(
                 ctx.accounts.token_metadata_program.key(),
@@ -73,7 +77,10 @@ pub mod tipsea_solana {
                 None,
             ),
             account_info.as_slice(),
-        )?;
+        );
+        if let Err(_) = result {
+            return Err(error!(ErrorCode::MetadataCreateFailed));
+        }
         msg!("Metadata Account Created !!!");
         let master_edition_infos = vec![
             ctx.accounts.master_edition.to_account_info(),
@@ -132,4 +139,13 @@ pub struct MintNFT<'info> {
     /// CHECK: This is not dangerous because we don't read or write from this account
     #[account(mut)]
     pub master_edition: UncheckedAccount<'info>,
+}
+
+#[error_code]
+pub enum ErrorCode {
+    #[msg("Mint failed!")]
+    MintFailed,
+
+    #[msg("Metadata account create failed!")]
+    MetadataCreateFailed
 }
