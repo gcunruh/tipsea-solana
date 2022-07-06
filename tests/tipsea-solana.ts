@@ -3,6 +3,7 @@ import { Program, Wallet } from '@project-serum/anchor'
 import { TipseaSolana } from '../target/types/tipsea_solana'
 import { TOKEN_PROGRAM_ID, createAssociatedTokenAccountInstruction, getAssociatedTokenAddress, createInitializeMintInstruction, MINT_SIZE } from '@solana/spl-token' // IGNORE THESE ERRORS IF ANY
 const { SystemProgram } = anchor.web3
+import { PublicKey } from '@solana/web3.js';
 
 describe('tipsea-nft', () => {
   // Configure the client to use the correct cluster.
@@ -98,9 +99,9 @@ describe('tipsea-nft', () => {
 
     const tx = await program.methods.mintNft(
       mintKey.publicKey,
-      "https://arweave.net/y5e5DJsiwH0s_ayfMwYk-SnrZtVZzHLQDSTZ5dNRUHA",
-      "TEST TEST",
-      "symb",
+      "https://tipsea.s3.us-west-2.amazonaws.com/test_metadata.json",
+      "Negroni",
+      "NEGRONI",
     )
       .accounts({
         mintAuthority: wallet.publicKey,
@@ -110,6 +111,7 @@ describe('tipsea-nft', () => {
         metadata: metadataAddress,
         tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
         payer: wallet.publicKey,
+        creator: new PublicKey("AAXzaxthXQTW6jnN7xJGVNiUeGqpDezMvqpMCd75D1nZ"),
         systemProgram: SystemProgram.programId,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
         masterEdition: masterEdition,

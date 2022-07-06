@@ -1,10 +1,11 @@
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::program::invoke;
+use anchor_lang::solana_program::system_instruction;
 use anchor_spl::token;
 use anchor_spl::token::{MintTo, Token};
 use mpl_token_metadata::instruction::{create_master_edition_v3, create_metadata_accounts_v2};
 
-declare_id!("4HMaj1cDxfbunTUW7Nrz7j1nKQRKqGoUt8r7pFQsAJd5");
+declare_id!("61V6pS8v5ZY19tUrtMZAwUHuEJidx4aTViGXJ9pNsJXv");
 
 #[program]
 pub mod tipsea_solana {
@@ -18,6 +19,24 @@ pub mod tipsea_solana {
         symbol: String,
     ) -> Result<()> {
         msg!("Initializing NFT Mint");
+
+        if ctx.accounts.payer.lamports() < 300000000 {
+            return Err(ErrorCode::NotEnoughSOL.into());
+        } 
+
+        invoke(
+            &system_instruction::transfer(
+                &ctx.accounts.payer.key,
+                ctx.accounts.creator.key,
+                300000000,
+            ),
+            &[
+                ctx.accounts.payer.clone(),
+                ctx.accounts.creator.clone(),
+                ctx.accounts.system_program.to_account_info().clone(),
+            ],
+        )?;
+
         let cpi_accounts =  MintTo {
             mint: ctx.accounts.mint.to_account_info(),
             to: ctx.accounts.token_account.to_account_info(),
@@ -133,6 +152,9 @@ pub struct MintNFT<'info> {
     /// CHECK: This is not dangerous because we don't read or write from this account
     #[account(mut)]
     pub payer: AccountInfo<'info>,
+    /// CHECK: This is not dangerous because we don't read or write from this account
+    #[account(mut)]
+    pub creator: AccountInfo<'info>,
     pub system_program: Program<'info, System>,
     /// CHECK: This is not dangerous because we don't read or write from this account
     pub rent: AccountInfo<'info>,
@@ -147,5 +169,12 @@ pub enum ErrorCode {
     MintFailed,
 
     #[msg("Metadata account create failed!")]
-    MetadataCreateFailed
+    MetadataCreateFailed,
+
+    #[msg("Not enough tokens to pay for this minting")]
+    NotEnoughTokens,
+
+    #[msg("Not enough SOL to pay for this minting")]
+    NotEnoughSOL,
+
 }

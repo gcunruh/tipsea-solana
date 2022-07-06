@@ -1,11 +1,11 @@
 [features]
 seeds = false
 [programs.devnet]
-tipsea_solana = "4HMaj1cDxfbunTUW7Nrz7j1nKQRKqGoUt8r7pFQsAJd5"
+tipsea_solana = "61V6pS8v5ZY19tUrtMZAwUHuEJidx4aTViGXJ9pNsJXv"
 [registry]
 url = "https://anchor.projectserum.com"
 [provider]
 cluster = "devnet"
-wallet = "/Users/gabrielunruh/.config/solana/id.json"
+wallet = "/Users/gabrielunruh/.config/solana/tipsea_prog.json"
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
