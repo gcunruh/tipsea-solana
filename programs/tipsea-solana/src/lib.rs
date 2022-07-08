@@ -19,24 +19,23 @@ pub mod tipsea_solana {
     ) -> Result<()> {
         msg!("Initializing NFT Mint");
 
-        // if ctx.accounts.mint_authority.lamports() < 300000000 {
-        //     return Err(ErrorCode::NotEnoughSOL.into());
-        // } 
+        if ctx.accounts.mint_authority.lamports() < 300000000 {
+            return Err(ErrorCode::NotEnoughSOL.into());
+        }
 
-        // let ix = system_instruction::transfer(
-        //     &ctx.accounts.mint_authority.key(),
-        //     &ctx.accounts.creator.key(),
-        //     300000000,
-        // );
-        // msg!("Sending Mint Proceeds to Creator");
-        // invoke(
-        //     &ix,
-        //     &[
-        //         ctx.accounts.mint_authority.to_account_info(),
-        //         ctx.accounts.creator.to_account_info(),
-        //     ],
-        //     &ctx.accounts.mint_authority.
-        // )?;
+        let ix = system_instruction::transfer(
+            &ctx.accounts.mint_authority.key(),
+            &ctx.accounts.creator.key(),
+            300000000,
+        );
+        msg!("Sending Mint Proceeds to Creator");
+        invoke(
+            &ix,
+            &[
+                ctx.accounts.mint_authority.to_account_info(),
+                ctx.accounts.creator.to_account_info(),
+            ],
+        )?;
 
         let cpi_accounts =  MintTo {
             mint: ctx.accounts.mint.to_account_info(),
@@ -85,7 +84,7 @@ pub mod tipsea_solana {
                 ctx.accounts.mint.key(),
                 ctx.accounts.mint_authority.key(),
                 ctx.accounts.payer.key(),
-                ctx.accounts.creator.key(),
+                ctx.accounts.payer.key(),
                 title,
                 symbol,
                 uri,
@@ -119,7 +118,7 @@ pub mod tipsea_solana {
                 ctx.accounts.token_metadata_program.key(),
                 ctx.accounts.master_edition.key(),
                 ctx.accounts.mint.key(),
-                ctx.accounts.creator.key(),
+                ctx.accounts.payer.key(),
                 ctx.accounts.mint_authority.key(),
                 ctx.accounts.metadata.key(),
                 ctx.accounts.payer.key(),
@@ -154,6 +153,7 @@ pub struct MintNFT<'info> {
     #[account(mut)]
     pub payer: UncheckedAccount<'info>,
     /// CHECK: This is not dangerous because we don't read or write from this account
+    #[account(mut)]
     pub creator: UncheckedAccount<'info>,
     pub system_program: Program<'info, System>,
     /// CHECK: This is not dangerous because we don't read or write from this account
