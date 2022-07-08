@@ -98,17 +98,16 @@ describe('tipsea-nft', () => {
     console.log("MasterEdition: ", masterEdition.toBase58());
 
     const tx = await program.methods.mintNft(
-      mintKey.publicKey,
-      "https://tipsea.s3.us-west-2.amazonaws.com/test_metadata.json",
+      "https://tipsea.s3.us-west-2.amazonaws.com/metadata/test_metadata.json",
       "Negroni",
       "NEGRONI",
     )
       .accounts({
         mintAuthority: wallet.publicKey,
         mint: mintKey.publicKey,
-        tokenAccount: NftTokenAccount,
         tokenProgram: TOKEN_PROGRAM_ID,
         metadata: metadataAddress,
+        tokenAccount: NftTokenAccount,
         tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
         payer: wallet.publicKey,
         creator: new PublicKey("AAXzaxthXQTW6jnN7xJGVNiUeGqpDezMvqpMCd75D1nZ"),
