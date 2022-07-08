@@ -3,7 +3,7 @@ use anchor_lang::solana_program::program::invoke;
 use anchor_lang::solana_program::system_instruction;
 use anchor_spl::token;
 use anchor_spl::token::{MintTo, Token};
-use mpl_token_metadata::instruction::{create_master_edition_v3, create_metadata_accounts_v2};
+use mpl_token_metadata::instruction::{create_master_edition_v3, create_metadata_accounts_v2, update_metadata_accounts_v2};
 
 declare_id!("61V6pS8v5ZY19tUrtMZAwUHuEJidx4aTViGXJ9pNsJXv");
 
@@ -57,6 +57,7 @@ pub mod tipsea_solana {
             ctx.accounts.mint.to_account_info(),
             ctx.accounts.mint_authority.to_account_info(),
             ctx.accounts.payer.to_account_info(),
+            ctx.accounts.creator.to_account_info(),
             ctx.accounts.token_metadata_program.to_account_info(),
             ctx.accounts.token_program.to_account_info(),
             ctx.accounts.system_program.to_account_info(),
@@ -91,7 +92,7 @@ pub mod tipsea_solana {
                 Some(creator),
                 300,
                 false,
-                false,
+                true,
                 None,
                 None,
             ),
@@ -106,6 +107,7 @@ pub mod tipsea_solana {
             ctx.accounts.mint.to_account_info(),
             ctx.accounts.mint_authority.to_account_info(),
             ctx.accounts.payer.to_account_info(),
+            ctx.accounts.creator.to_account_info(),
             ctx.accounts.metadata.to_account_info(),
             ctx.accounts.token_metadata_program.to_account_info(),
             ctx.accounts.token_program.to_account_info(),
@@ -127,6 +129,23 @@ pub mod tipsea_solana {
             master_edition_infos.as_slice(),
         )?;
         msg!("Master Edition Nft Minted !!!");
+
+        invoke(
+            &update_metadata_accounts_v2(
+                ctx.accounts.token_metadata_program.key(),
+                ctx.accounts.metadata.key(),
+                ctx.accounts.payer.key(),
+                Some(ctx.accounts.creator.key()),
+                None,
+                Some(true),
+                Some(true),
+            ),
+            &[
+                ctx.accounts.token_metadata_program.to_account_info(),
+                ctx.accounts.metadata.to_account_info(),
+                ctx.accounts.mint_authority.to_account_info(),
+            ],
+        )?;
 
         Ok(())
     }
