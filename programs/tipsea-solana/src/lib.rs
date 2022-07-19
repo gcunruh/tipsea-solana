@@ -1,17 +1,16 @@
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::program::invoke;
 use anchor_lang::solana_program::system_instruction;
-use anchor_spl::token;
-use anchor_spl::token::{MintTo, Token};
+use anchor_spl::token::{self, transfer, Transfer, MintTo, Token };
 use mpl_token_metadata::instruction::{create_master_edition_v3, create_metadata_accounts_v2, update_metadata_accounts_v2};
 
-declare_id!("61V6pS8v5ZY19tUrtMZAwUHuEJidx4aTViGXJ9pNsJXv");
+declare_id!("9gxkAobRDsTv3E5T8nteySZhYr4j87hC8K7b2ZiyqP5m");
 
 #[program]
 pub mod tipsea_solana {
     use super::*;
 
-    pub fn  mint_nft(
+    pub fn mint_nft(
         ctx: Context<MintNFT>,
         uri: String,
         title: String,
@@ -149,6 +148,25 @@ pub mod tipsea_solana {
 
         Ok(())
     }
+
+    pub fn send_nft(
+        ctx: Context<SendNft>
+    ) -> Result<()> {
+
+        let transfer_instructions = Transfer{
+            from: ctx.accounts.from.to_account_info(),
+            to: ctx.accounts.receiver.to_account_info(),
+            authority: ctx.accounts.sender.to_account_info(),
+        };
+
+        let cpi_program = ctx.accounts.token_program.to_account_info();
+
+        let cpi_ctx = CpiContext::new(cpi_program, transfer_instructions);
+
+        transfer(cpi_ctx, 1)?;
+
+        Ok(())
+    }
 }
 
 #[derive(Accounts)]
@@ -180,6 +198,21 @@ pub struct MintNFT<'info> {
     /// CHECK: This is not dangerous because we don't read or write from this account
     #[account(mut)]
     pub master_edition: UncheckedAccount<'info>,
+}
+
+#[derive(Accounts)]
+pub struct SendNft<'info> {
+    #[account(mut)]
+    pub sender: Signer<'info>,
+    /// CHECK: This is not dangerous because we don't read or write from this account
+    #[account(mut)]
+    pub from: UncheckedAccount<'info>,
+    /// CHECK: This is not dangerous because we don't read or write from this account
+    #[account(mut)]
+    pub receiver: UncheckedAccount<'info>,
+    pub system_program: Program<'info, System>,
+    pub token_program: Program<'info, Token>,
+    pub rent: Sysvar<'info, Rent>,
 }
 
 #[error_code]

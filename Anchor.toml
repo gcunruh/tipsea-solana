@@ -1,7 +1,7 @@
 [features]
 seeds = false
 [programs.devnet]
-tipsea_solana = "61V6pS8v5ZY19tUrtMZAwUHuEJidx4aTViGXJ9pNsJXv"
+tipsea_solana = "9gxkAobRDsTv3E5T8nteySZhYr4j87hC8K7b2ZiyqP5m"
 [registry]
 url = "https://anchor.projectserum.com"
 [provider]
