@@ -14,6 +14,10 @@ describe('tipsea-nft', () => {
   anchor.setProvider(provider);
   const program = anchor.workspace.TipseaSolana as Program<TipseaSolana>
 
+  it("what is id", async () => {
+    console.log(program.programId);
+  })
+
   it("mint nft", async () => {
     // Add your test here.
 
