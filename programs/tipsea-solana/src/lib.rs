@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_lang::solana_program::program::invoke;
 use anchor_spl::token::{self, MintTo, Token, TokenAccount, Mint };
 use mpl_token_metadata::instruction::{create_master_edition_v3, create_metadata_accounts_v3, update_metadata_accounts_v2};
-use mpl_token_metadata::state::{Metadata, TokenMetadataAccount, PREFIX, EDITION };
+use mpl_token_metadata::state::{Uses, UseMethod::Single, Metadata, TokenMetadataAccount, PREFIX, EDITION };
 use solana_program::pubkey;
 
 pub const TIPSEA: Pubkey = pubkey!("8a2z19H17vyQ89rmtR5tATWkGFutJ5gBWre2fthXimHa");
@@ -15,7 +15,11 @@ pub mod tipsea_solana {
 
     use super::*;
 
-    pub fn initialize_tipsea(_ctx: Context<InitializeTipsea>) -> Result<()> {
+    pub fn initialize_tipsea(ctx: Context<InitializeTipsea>) -> Result<()> {
+        let tipsea_box = &mut ctx.accounts.tipsea_box;
+        tipsea_box.initializer = *ctx.accounts.initializer.key;
+        tipsea_box.token_mint = ctx.accounts.mint.key();
+
         Ok(())
     }
 
@@ -79,6 +83,12 @@ pub mod tipsea_solana {
         ];
         msg!("Creator assigned!");
 
+        let uses = Uses {
+            use_method: Single,
+            remaining: 1,
+            total: 1
+        };
+
         // let collection = 
         // mpl_token_metadata::state::Collection {
         //     verified: false,
@@ -103,7 +113,7 @@ pub mod tipsea_solana {
                 true,
                 true,
                 None,
-                None,
+                Some(uses),
                 None,
             ),
             account_info.as_slice(),
@@ -163,92 +173,98 @@ pub mod tipsea_solana {
         ctx: Context<Redeem>,
     ) -> Result<()> {
 
-        let nft_token_account = &ctx.accounts.token_account;
-        let user = &ctx.accounts.signer;
-        let nft_mint_account = &ctx.accounts.mint;
+        // let nft_token_account = &ctx.accounts.token_account;
+        // let user = &ctx.accounts.signer;
+        // let nft_mint_account = &ctx.accounts.mint;
 
-        assert_eq!(nft_token_account.owner, user.key());
-        assert_eq!(nft_token_account.mint, nft_mint_account.key());
-        assert_eq!(nft_token_account.amount, 1);
+        // assert_eq!(nft_token_account.owner, user.key());
+        // assert_eq!(nft_token_account.mint, nft_mint_account.key());
+        // assert_eq!(nft_token_account.amount, 1);
 
         //We expect a Metaplex Master Edition so we derive it given mint as seeds
         //Then compare to the Mint account passed into the program
 
-        let master_edition_seed = &[
-            PREFIX.as_bytes(),
-            ctx.accounts.token_metadata_program.key.as_ref(),
-            nft_token_account.mint.as_ref(),
-            EDITION.as_bytes()
-        ];
+        // let master_edition_seed = &[
+        //     PREFIX.as_bytes(),
+        //     ctx.accounts.token_metadata_program.key.as_ref(),
+        //     nft_token_account.mint.as_ref(),
+        //     EDITION.as_bytes()
+        // ];
 
-        let (master_edition_key, _master_edition_seed) =
-            Pubkey::find_program_address(master_edition_seed, ctx.accounts.token_metadata_program.key);
+        // let (master_edition_key, _master_edition_seed) =
+        //     Pubkey::find_program_address(master_edition_seed, ctx.accounts.token_metadata_program.key);
         
-        assert_eq!(master_edition_key, ctx.accounts.mint.key());
+        // assert_eq!(master_edition_key, ctx.accounts.mint.key());
 
-        let nft_metadata_account = &ctx.accounts.metadata_account;
-        let nft_mint_account_pubkey = &ctx.accounts.mint.key();
+        // let nft_metadata_account = &ctx.accounts.metadata_account;
+        // let nft_mint_account_pubkey = &ctx.accounts.mint.key();
 
-        let metadata_seed = &[
-            PREFIX.as_bytes(),
-            ctx.accounts.token_metadata_program.key.as_ref(),
-            nft_mint_account_pubkey.as_ref(),
-        ];
+        // let metadata_seed = &[
+        //     PREFIX.as_bytes(),
+        //     ctx.accounts.token_metadata_program.key.as_ref(),
+        //     nft_mint_account_pubkey.as_ref(),
+        // ];
 
-        let (metadata_derived_key, _bump_seed) =
-            Pubkey::find_program_address(
-                metadata_seed,
-                ctx.accounts.token_metadata_program.key
-            );
-        //check that derived key is the current metadata account key
-        assert_eq!(metadata_derived_key, nft_metadata_account.key());
+        // let (metadata_derived_key, _bump_seed) =
+        //     Pubkey::find_program_address(
+        //         metadata_seed,
+        //         ctx.accounts.token_metadata_program.key
+        //     );
+        // //check that derived key is the current metadata account key
+        // assert_eq!(metadata_derived_key, nft_metadata_account.key());
 
-        if ctx.accounts.metadata_account.data_is_empty() {
-            return Err(ErrorCode::NotInitialized.into());
-        };
+        // if ctx.accounts.metadata_account.data_is_empty() {
+        //     return Err(ErrorCode::NotInitialized.into());
+        // };
 
-        //Get the metadata account struct so we can access its values
-        let metadata_full_account =
-            &mut Metadata::from_account_info(&ctx.accounts.metadata_account)?;
+        // //Get the metadata account struct so we can access its values
+        // let metadata_full_account =
+        //     &mut Metadata::from_account_info(&ctx.accounts.metadata_account)?;
         
-        let full_metadata_clone = metadata_full_account.clone();
+        // let full_metadata_clone = metadata_full_account.clone();
 
-        let expected_creator =
-            TIPSEA;
-            //solana_program::pubkey!("BuSmTfRJFB7ewseydjbC8DaRYYuhPBPLGyeK7cxNLx1k");
+        // let expected_creator =
+        //     TIPSEA;
+        //     //solana_program::pubkey!("BuSmTfRJFB7ewseydjbC8DaRYYuhPBPLGyeK7cxNLx1k");
         
             
         //Verify creator is present in metadata
         //NOTE: The first address in 'creators' is the Candy Machine Address
         // Therefore, the expected_creator should be the Candy Machine Address here
         //NOTE: May want to use updateAuthority field if CMA is not known in advance?
-        assert_eq!(
-            full_metadata_clone.data.creators.as_ref().unwrap()[0].address,
-            expected_creator
-        );
+        // assert_eq!(
+        //     full_metadata_clone.data.creators.as_ref().unwrap()[0].address,
+        //     expected_creator
+        // );
 
-        //check if creator is verified
-        if !full_metadata_clone.data.creators.unwrap()[0].verified {
-            //return error as creator is not verified 
-            return Err(ErrorCode::CreatorNotVerified.into());
-        };
+        // //check if creator is verified
+        // if !full_metadata_clone.data.creators.unwrap()[0].verified {
+        //     //return error as creator is not verified 
+        //     return Err(ErrorCode::CreatorNotVerified.into());
+        // };
 
         // redeeming with USDC
-        token::transfer(
-            CpiContext::new(
-                ctx.accounts.token_program.to_account_info(),
-                token::Transfer {
-                    from: ctx.accounts.fund.to_account_info(),
-                    to: ctx.accounts.fund.to_account_info(),
-                    authority: ctx.accounts.to_account.to_account_info(),
-                },
-            ),
-            7
-        )?;
+        // token::transfer(
+        //     CpiContext::new(
+        //         ctx.accounts.token_program.to_account_info(),
+        //         token::Transfer {
+        //             from: ctx.accounts.fund.to_account_info(),
+        //             to: ctx.accounts.to_account.to_account_info(),
+        //             authority: ctx.accounts.fund.to_account_info(),
+        //         },
+        //     ),
+        //     7000000000
+        // )?;
         
         Ok(())
     }
 
+}
+
+#[account]
+pub struct TipseaBox {
+    initializer: Pubkey,               // the authorized account that creates the BoletoBox
+    token_mint: Pubkey,            // mint of the SPL token
 }
 
 #[derive(Accounts)]
@@ -257,11 +273,19 @@ pub struct InitializeTipsea<'info> {
     pub initializer: Signer<'info>,
     #[account(
         init,
+        seeds = [b"tipsea".as_ref(), mint.key().as_ref()],
+        bump,
+        payer = initializer,
+        space = 8 + 32 + 32 + 2
+    )]
+    tipsea_box: Account<'info, TipseaBox>,
+    #[account(
+        init,
         seeds=[b"fund".as_ref(), initializer.key().as_ref()],
         bump,
         payer = initializer,
         token::mint = mint,
-        token::authority = initializer,
+        token::authority = tipsea_box,
     )]
     pub fund: Account<'info, TokenAccount>,
     pub mint: Account<'info, Mint>,
@@ -310,14 +334,15 @@ pub struct Redeem<'info> {
     pub to_account: Account<'info, TokenAccount>,
     #[account(mut)]
     pub fund: Account<'info, TokenAccount>,
+    #[account(mut)]
     pub mint: Account<'info, Mint>,
     #[account(mut)]
     pub token_account: Account<'info, TokenAccount>,
     /// CHECK: This is not dangerous because we don't read or write from this account
-    pub metadata_account: AccountInfo<'info>,
+    #[account(mut)]
+    pub metadata_account: UncheckedAccount<'info>,
     /// CHECK: This is not dangerous because we don't read or write from this account
-    #[account(address = mpl_token_metadata::ID)]
-    pub token_metadata_program: AccountInfo<'info>,
+    pub token_metadata_program: UncheckedAccount<'info>,
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
     pub rent: Sysvar<'info, Rent>,
