@@ -1,79 +1,131 @@
-import * as anchor from '@project-serum/anchor'
-import { Program, Wallet } from '@project-serum/anchor'
-import { TipseaSolana } from '../target/types/tipsea_solana'
-import { TOKEN_PROGRAM_ID, createAssociatedTokenAccountInstruction, getAssociatedTokenAddress, createInitializeMintInstruction, MINT_SIZE } from '@solana/spl-token' // IGNORE THESE ERRORS IF ANY
-const { SystemProgram } = anchor.web3
-import { PublicKey } from '@solana/web3.js';
+import * as anchor from '@project-serum/anchor';
+import { Program, Wallet } from '@project-serum/anchor';
+import { TipseaSolana } from '../target/types/tipsea_solana';
+import { TOKEN_PROGRAM_ID, createAssociatedTokenAccountInstruction, getAssociatedTokenAddress, createInitializeMintInstruction, MINT_SIZE, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
+const { SystemProgram } = anchor.web3;
+import { PROGRAM_ADDRESS } from '@metaplex-foundation/mpl-token-metadata';
+import { PublicKey, Keypair } from '@solana/web3.js';
 
-let newMintKey: any;
+const provider = anchor.AnchorProvider.env();
+anchor.setProvider( provider );
+const program = anchor.workspace.TipseaSolana as Program<TipseaSolana>;
+const programId = program.programId;
+const wallet = provider.wallet as Wallet;
+const to_pk = [] as number[]; // fill in 
+const to_wallet = Keypair.fromSecretKey(
+  Uint8Array.from( to_pk )
+);
 
-describe('tipsea-nft', () => {
-  // Configure the client to use the correct cluster.
-  const provider = anchor.AnchorProvider.env();
-  const wallet = provider.wallet as Wallet;
-  anchor.setProvider(provider);
-  const program = anchor.workspace.TipseaSolana as Program<TipseaSolana>
+const HERA_USDC_MINT = new PublicKey( "5kU3fkzBcmpirSbjDY99QqQ3Zq8ABks1JMzZxAVx16Da" );
+const TOKEN_METADATA_PROGRAM_ID = new PublicKey( PROGRAM_ADDRESS );
+const TIPSEA = new PublicKey("8a2z19H17vyQ89rmtR5tATWkGFutJ5gBWre2fthXimHa");
 
-  it("what is id", async () => {
-    console.log(program.programId);
-  })
+describe( 'tipsea-nft', async () =>
+{
+  const getMetadata = async (
+    mint: anchor.web3.PublicKey
+  ): Promise<anchor.web3.PublicKey> =>
+  {
+    return (
+      await anchor.web3.PublicKey.findProgramAddress(
+        [
+          Buffer.from( "metadata" ),
+          TOKEN_METADATA_PROGRAM_ID.toBuffer(),
+          mint.toBuffer(),
+        ],
+        TOKEN_METADATA_PROGRAM_ID
+      )
+    )[ 0 ];
+  };
 
-  it("mint nft", async () => {
-    // Add your test here.
+  const getMasterEdition = async (
+    mint: anchor.web3.PublicKey
+  ): Promise<anchor.web3.PublicKey> =>
+  {
+    return (
+      await anchor.web3.PublicKey.findProgramAddress(
+        [
+          Buffer.from( "metadata" ),
+          TOKEN_METADATA_PROGRAM_ID.toBuffer(),
+          mint.toBuffer(),
+          Buffer.from( "edition" ),
+        ],
+        TOKEN_METADATA_PROGRAM_ID
+      )
+    )[ 0 ];
+  };
 
-    const TOKEN_METADATA_PROGRAM_ID = new anchor.web3.PublicKey(
-      "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
+  const fundSeeds = [
+    Buffer.from( "fund" ),
+    wallet.publicKey.toBuffer()
+  ];
+
+  const [ fundPda, _fundBump ] = await anchor.web3.PublicKey
+    .findProgramAddress(
+      fundSeeds,
+      programId,
     );
+
+  const fromAta = await getAssociatedTokenAddress(
+    HERA_USDC_MINT,
+    provider.wallet.publicKey,
+    true,
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID
+  );
+
+  const toAta = await getAssociatedTokenAddress(
+    HERA_USDC_MINT,
+    to_wallet.publicKey,
+    true,
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID
+  );
+
+  const mintKey: anchor.web3.Keypair = anchor.web3.Keypair.generate();
+
+  const NftTokenAccount = await getAssociatedTokenAddress(
+    mintKey.publicKey,
+    wallet.publicKey
+  );
+
+  // it("initialize tipsea", async() => {
+  //   console.log("Initializing...");
+  //   let tx = new anchor.web3.Transaction();
+
+  //   tx.add(
+  //     await program.methods
+  //       .initializeTipsea()
+  //       .accounts({
+  //         initializer: provider.wallet.publicKey,
+  //         fund: fundPda,
+  //         mint: HERA_USDC_MINT
+  //       })
+  //       .instruction()
+  //   );
+
+  //   await provider.sendAndConfirm(tx);
+  //   console.log("Initialized!");
+  // })
+
+  it( "mint nft", async () =>
+  {
+
     const lamports: number =
       await program.provider.connection.getMinimumBalanceForRentExemption(
         MINT_SIZE
       );
-    const getMetadata = async (
-      mint: anchor.web3.PublicKey
-    ): Promise<anchor.web3.PublicKey> => {
-      return (
-        await anchor.web3.PublicKey.findProgramAddress(
-          [
-            Buffer.from("metadata"),
-            TOKEN_METADATA_PROGRAM_ID.toBuffer(),
-            mint.toBuffer(),
-          ],
-          TOKEN_METADATA_PROGRAM_ID
-        )
-      )[0];
-    };
 
-    const getMasterEdition = async (
-      mint: anchor.web3.PublicKey
-    ): Promise<anchor.web3.PublicKey> => {
-      return (
-        await anchor.web3.PublicKey.findProgramAddress(
-          [
-            Buffer.from("metadata"),
-            TOKEN_METADATA_PROGRAM_ID.toBuffer(),
-            mint.toBuffer(),
-            Buffer.from("edition"),
-          ],
-          TOKEN_METADATA_PROGRAM_ID
-        )
-      )[0];
-    };
+    const mint_tx = new anchor.web3.Transaction();
 
-    const mintKey: anchor.web3.Keypair = anchor.web3.Keypair.generate();
-    const NftTokenAccount = await getAssociatedTokenAddress(
-      mintKey.publicKey,
-      wallet.publicKey
-    );
-    console.log("NFT Account: ", NftTokenAccount.toBase58());
-
-    const mint_tx = new anchor.web3.Transaction().add(
-      anchor.web3.SystemProgram.createAccount({
+    mint_tx.add(
+      anchor.web3.SystemProgram.createAccount( {
         fromPubkey: wallet.publicKey,
         newAccountPubkey: mintKey.publicKey,
         space: MINT_SIZE,
         programId: TOKEN_PROGRAM_ID,
         lamports,
-      }),
+      } ),
       createInitializeMintInstruction(
         mintKey.publicKey,
         0,
@@ -89,81 +141,72 @@ describe('tipsea-nft', () => {
     );
 
     const res = await program.provider.sendAndConfirm(mint_tx, [mintKey]);
-    console.log(
-      await program.provider.connection.getParsedAccountInfo(mintKey.publicKey)
-    );
 
-    console.log("Account: ", res);
-    console.log("Mint key: ", mintKey.publicKey.toString());
-    console.log("User: ", wallet.publicKey.toString());
+    const metadataAddress = await getMetadata( mintKey.publicKey );
+    const masterEdition = await getMasterEdition( mintKey.publicKey );
 
-    const metadataAddress = await getMetadata(mintKey.publicKey);
-    const masterEdition = await getMasterEdition(mintKey.publicKey);
+    console.log( "Account: ", res );
+    console.log( "Mint key: ", mintKey.publicKey.toString() );
+    console.log( "ATA: ", NftTokenAccount.toBase58() );
+    console.log( "Metadata address: ", metadataAddress.toBase58() );
+    console.log( "MasterEdition: ", masterEdition.toBase58() );
 
-    console.log("Metadata address: ", metadataAddress.toBase58());
-    console.log("MasterEdition: ", masterEdition.toBase58());
+    let tx = new anchor.web3.Transaction();
 
-    const tx = await program.methods.mintNft(
-      "https://tipsea.s3.us-west-2.amazonaws.com/metadata/test_metadata.json",
-      "Martini",
-      "MARTINI",
-    )
-      .accounts({
-        mintAuthority: wallet.publicKey,
-        mint: mintKey.publicKey,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        metadata: metadataAddress,
-        tokenAccount: NftTokenAccount,
-        tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
-        payer: wallet.publicKey,
-        creator: new PublicKey("AAXzaxthXQTW6jnN7xJGVNiUeGqpDezMvqpMCd75D1nZ"),
-        systemProgram: SystemProgram.programId,
-        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-        masterEdition: masterEdition,
-      },
+    tx.add( 
+      await program.methods.createTipsea(
+        "https://tipsea.s3.us-west-2.amazonaws.com/metadata/test_metadata.json",
+        "Martini",
+        "MAR",
+        TIPSEA
       )
-      .rpc();
-    newMintKey = mintKey.publicKey;
-    console.log("Your transaction signature", tx);
-  });
+        .accounts( {
+          mintAuthority: wallet.publicKey,
+          mint: mintKey.publicKey,
+          tokenAccount: NftTokenAccount,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          metadata: metadataAddress,
+          tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
+          payer: wallet.publicKey,
+          fromAccount: fromAta,
+          fund: fundPda,
+          systemProgram: anchor.web3.SystemProgram.programId,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+          masterEdition: masterEdition,
+        },
+        ).instruction());
 
-  it('send nft', async() => {
+    const final = await program.provider.sendAndConfirm(tx);
 
-    const fromAta = await getAssociatedTokenAddress(
-      newMintKey,
-      wallet.publicKey
-    )
+    console.log( "Done!", final );
+  } );
 
-    const toAta = await getAssociatedTokenAddress(
-        newMintKey, // mint
-        new PublicKey("AAXzaxthXQTW6jnN7xJGVNiUeGqpDezMvqpMCd75D1nZ") // owner
-    );
+  // it( "redeem", async () =>
+  // {
+  //   console.log( "Redeeming..." );
+  //   let tx = new anchor.web3.Transaction();
 
-    console.log(`New Mint Key: ${newMintKey}`);
-    console.log(`fromAta: ${fromAta}`);
-    console.log(`toAta: ${toAta}`);
+  //   tx.add(
+  //     await program.methods
+  //       .redeem()
+  //       .accounts( {
+  //         signer: to_wallet.publicKey,
+  //         toAccount: toAta,
+  //         fund: fundPda,
+  //         mint: HERA_USDC_MINT,
+  //         tokenAccount: NftTokenAccount,
+  //         metadataAccount: metadataAddress,
+  //         tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
+  //         systemProgram: SystemProgram.programId,
+  //         tokenProgram: TOKEN_PROGRAM_ID,
+  //         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+  //       } )
+  //       .instruction()
+  //   );
 
-
-    const mint_tx = new anchor.web3.Transaction().add(
-      createAssociatedTokenAccountInstruction(
-        wallet.publicKey, toAta, new PublicKey("AAXzaxthXQTW6jnN7xJGVNiUeGqpDezMvqpMCd75D1nZ"), newMintKey
-      )
-    )
-
-    await anchor.AnchorProvider.env().sendAndConfirm(mint_tx, []);
-
-    console.log(`toAta: ${mint_tx}`);
-
-    await program.methods.sendNft().accounts({
-      sender: wallet.publicKey,
-      from: fromAta,
-      receiver: toAta,
-      systemProgram: SystemProgram.programId,
-      tokenProgram: TOKEN_PROGRAM_ID,
-      rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-    }).rpc()
-
-  })
+  //   await provider.sendAndConfirm( tx );
+  //   console.log( "Success!", tx );
+  // } );
 
 
-});
+} );
