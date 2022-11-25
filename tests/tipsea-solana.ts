@@ -57,7 +57,7 @@ describe( 'tipsea-nft', async () =>
 
   const fundSeeds = [
     Buffer.from( "fund" ),
-    wallet.publicKey.toBuffer()
+    HERA_USDC_MINT.toBuffer()
   ];
 
   const [ fundPda, _fundBump ] = await anchor.web3.PublicKey
@@ -198,10 +198,13 @@ describe( 'tipsea-nft', async () =>
 
     tx.add(
       await program.methods
-        .redeem()
+        .redeem(
+          _fundBump
+        )
         .accounts( {
           signer: to_wallet.publicKey,
           toAccount: toAta.address,
+          tokenMint: HERA_USDC_MINT,
           fund: fundPda,
           mint: mintKey.publicKey,
           tokenAccount: NftTokenAccount,

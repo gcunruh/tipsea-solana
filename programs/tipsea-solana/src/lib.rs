@@ -1,24 +1,22 @@
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::program::invoke;
 use anchor_spl::token::{self, MintTo, Token, TokenAccount, Mint };
-use mpl_token_metadata::instruction::{create_master_edition_v3, create_metadata_accounts_v3, update_metadata_accounts_v2};
+use anchor_spl::associated_token::AssociatedToken;
+use mpl_token_metadata::instruction::{create_master_edition_v3, create_metadata_accounts_v3, update_metadata_accounts_v2, utilize};
 use mpl_token_metadata::state::{Uses, UseMethod::Single, Metadata, TokenMetadataAccount, PREFIX, EDITION };
 use solana_program::pubkey;
 
 pub const TIPSEA: Pubkey = pubkey!("8a2z19H17vyQ89rmtR5tATWkGFutJ5gBWre2fthXimHa");
 // pub const TIPSEA_COLLECTION: Pubkey = pubkey!("8a2z19H17vyQ89rmtR5tATWkGFutJ5gBWre2fthXimHa");
 
-declare_id!("4fAkJwnBu84Ey1ikVrpJTSvFxZyahCoBuMdcHn4TMGad");
+declare_id!("Bw9yuLw62jk9Z2gjtNm8wdKkoYLZdPfJgDUrRNkTPVxM");
 
 #[program]
 pub mod tipsea_solana {
 
     use super::*;
 
-    pub fn initialize_tipsea(ctx: Context<InitializeTipsea>) -> Result<()> {
-        let tipsea_box = &mut ctx.accounts.tipsea_box;
-        tipsea_box.initializer = *ctx.accounts.initializer.key;
-        tipsea_box.token_mint = ctx.accounts.mint.key();
+    pub fn initialize_tipsea(_ctx: Context<InitializeTipsea>) -> Result<()> {
 
         Ok(())
     }
@@ -171,71 +169,53 @@ pub mod tipsea_solana {
 
     pub fn redeem(
         ctx: Context<Redeem>,
+        bump: u8
     ) -> Result<()> {
 
-        // let nft_token_account = &ctx.accounts.token_account;
-        // let user = &ctx.accounts.signer;
-        // let nft_mint_account = &ctx.accounts.mint;
+        let nft_token_account = &ctx.accounts.token_account;
+        let user = &ctx.accounts.signer;
+        let nft_mint_account = &ctx.accounts.mint;
 
-        // assert_eq!(nft_token_account.owner, user.key());
-        // assert_eq!(nft_token_account.mint, nft_mint_account.key());
-        // assert_eq!(nft_token_account.amount, 1);
+        assert_eq!(nft_token_account.owner, user.key());
+        assert_eq!(nft_token_account.mint, nft_mint_account.key());
+        assert_eq!(nft_token_account.amount, 1);
 
         //We expect a Metaplex Master Edition so we derive it given mint as seeds
         //Then compare to the Mint account passed into the program
+        let nft_metadata_account = &ctx.accounts.metadata_account;
+        let nft_mint_account_pubkey = ctx.accounts.mint.key();
 
-        // let master_edition_seed = &[
-        //     PREFIX.as_bytes(),
-        //     ctx.accounts.token_metadata_program.key.as_ref(),
-        //     nft_token_account.mint.as_ref(),
-        //     EDITION.as_bytes()
-        // ];
+        let metadata_seed = &[
+            PREFIX.as_bytes(),
+            ctx.accounts.token_metadata_program.key.as_ref(),
+            nft_mint_account_pubkey.as_ref(),
+        ];
 
-        // let (master_edition_key, _master_edition_seed) =
-        //     Pubkey::find_program_address(master_edition_seed, ctx.accounts.token_metadata_program.key);
+        let (metadata_derived_key, _bump_seed) =
+            Pubkey::find_program_address(metadata_seed, ctx.accounts.token_metadata_program.key);
+
+        assert_eq!(metadata_derived_key, nft_metadata_account.key());
+
+        if ctx.accounts.metadata_account.data_is_empty() {
+            return Err(ErrorCode::NotInitialized.into());
+        };
+
+        //Get the metadata account struct so we can access its values
+        let metadata_full_account =
+            &mut Metadata::from_account_info(&ctx.accounts.metadata_account)?;
         
-        // assert_eq!(master_edition_key, ctx.accounts.mint.key());
+        let full_metadata_clone = metadata_full_account.clone();
 
-        // let nft_metadata_account = &ctx.accounts.metadata_account;
-        // let nft_mint_account_pubkey = &ctx.accounts.mint.key();
-
-        // let metadata_seed = &[
-        //     PREFIX.as_bytes(),
-        //     ctx.accounts.token_metadata_program.key.as_ref(),
-        //     nft_mint_account_pubkey.as_ref(),
-        // ];
-
-        // let (metadata_derived_key, _bump_seed) =
-        //     Pubkey::find_program_address(
-        //         metadata_seed,
-        //         ctx.accounts.token_metadata_program.key
-        //     );
-        // //check that derived key is the current metadata account key
-        // assert_eq!(metadata_derived_key, nft_metadata_account.key());
-
-        // if ctx.accounts.metadata_account.data_is_empty() {
-        //     return Err(ErrorCode::NotInitialized.into());
-        // };
-
-        // //Get the metadata account struct so we can access its values
-        // let metadata_full_account =
-        //     &mut Metadata::from_account_info(&ctx.accounts.metadata_account)?;
-        
-        // let full_metadata_clone = metadata_full_account.clone();
-
-        // let expected_creator =
-        //     TIPSEA;
-        //     //solana_program::pubkey!("BuSmTfRJFB7ewseydjbC8DaRYYuhPBPLGyeK7cxNLx1k");
-        
+        let expected_creator = TIPSEA;        
             
         //Verify creator is present in metadata
         //NOTE: The first address in 'creators' is the Candy Machine Address
         // Therefore, the expected_creator should be the Candy Machine Address here
         //NOTE: May want to use updateAuthority field if CMA is not known in advance?
-        // assert_eq!(
-        //     full_metadata_clone.data.creators.as_ref().unwrap()[0].address,
-        //     expected_creator
-        // );
+        assert_eq!(
+            full_metadata_clone.data.creators.as_ref().unwrap()[0].address,
+            expected_creator
+        );
 
         // //check if creator is verified
         // if !full_metadata_clone.data.creators.unwrap()[0].verified {
@@ -243,29 +223,60 @@ pub mod tipsea_solana {
         //     return Err(ErrorCode::CreatorNotVerified.into());
         // };
 
+        // reduce utilize
+        let account_info = vec![
+            ctx.accounts.metadata_account.to_account_info(),
+            ctx.accounts.token_account.to_account_info(),
+            ctx.accounts.mint.to_account_info(),
+            ctx.accounts.signer.to_account_info(),
+            ctx.accounts.signer.to_account_info(),
+            ctx.accounts.signer.to_account_info(),
+            ctx.accounts.token_program.to_account_info(),
+            ctx.accounts.associated_token_program.to_account_info(),
+            ctx.accounts.system_program.to_account_info()
+        ];
+        msg!("Account info assigned!");
+
+        invoke(
+            &utilize(
+                ctx.accounts.token_metadata_program.key(),
+                ctx.accounts.metadata_account.key(),
+                ctx.accounts.token_account.key(),
+                ctx.accounts.mint.key(),
+                None,
+                ctx.accounts.signer.key(),
+                ctx.accounts.signer.key(),
+                None,
+                1
+            ),
+            account_info.as_slice(),
+
+        )?;
+        msg!("Used token!");
+
         // redeeming with USDC
-        // token::transfer(
-        //     CpiContext::new(
-        //         ctx.accounts.token_program.to_account_info(),
-        //         token::Transfer {
-        //             from: ctx.accounts.fund.to_account_info(),
-        //             to: ctx.accounts.to_account.to_account_info(),
-        //             authority: ctx.accounts.fund.to_account_info(),
-        //         },
-        //     ),
-        //     7000000000
-        // )?;
+        token::transfer(
+            CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                token::Transfer {
+                    from: ctx.accounts.fund.to_account_info(),
+                    to: ctx.accounts.to_account.to_account_info(),
+                    authority: ctx.accounts.fund.to_account_info(),
+                },
+                &[&[
+                    b"fund".as_ref(),
+                    &ctx.accounts.token_mint.key().as_ref(),
+                    &[bump],
+                ]],
+            ),
+            7000000000
+        )?;
         
         Ok(())
     }
 
 }
 
-#[account]
-pub struct TipseaBox {
-    initializer: Pubkey,               // the authorized account that creates the BoletoBox
-    token_mint: Pubkey,            // mint of the SPL token
-}
 
 #[derive(Accounts)]
 pub struct InitializeTipsea<'info> {
@@ -273,19 +284,11 @@ pub struct InitializeTipsea<'info> {
     pub initializer: Signer<'info>,
     #[account(
         init,
-        seeds = [b"tipsea".as_ref(), mint.key().as_ref()],
-        bump,
-        payer = initializer,
-        space = 8 + 32 + 32 + 2
-    )]
-    tipsea_box: Account<'info, TipseaBox>,
-    #[account(
-        init,
-        seeds=[b"fund".as_ref(), initializer.key().as_ref()],
+        seeds=[b"fund".as_ref(), mint.key().as_ref()],
         bump,
         payer = initializer,
         token::mint = mint,
-        token::authority = tipsea_box,
+        token::authority = fund,
     )]
     pub fund: Account<'info, TokenAccount>,
     pub mint: Account<'info, Mint>,
@@ -330,9 +333,25 @@ pub struct CreateTipsea<'info> {
 pub struct Redeem<'info> {
     #[account(mut)]
     pub signer: Signer<'info>,
-    #[account(mut, constraint = to_account.owner == signer.key())]
+    #[account(
+        init_if_needed,
+        payer = signer,
+        associated_token::mint = token_mint,
+        associated_token::authority = signer
+    )]
     pub to_account: Account<'info, TokenAccount>,
-    #[account(mut)]
+    pub token_mint: Account<'info, Mint>,
+    // #[account(
+    //     mut,
+    //     seeds = [b"tipsea", token_mint.key().as_ref()],
+    //     bump
+    // )]
+    // pub tipsea_box: Account<'info, TipseaBox>,
+    #[account(
+        mut,
+        seeds = [b"fund", token_mint.key().as_ref()],
+        bump
+    )]
     pub fund: Account<'info, TokenAccount>,
     #[account(mut)]
     pub mint: Account<'info, Mint>,
@@ -345,6 +364,7 @@ pub struct Redeem<'info> {
     pub token_metadata_program: UncheckedAccount<'info>,
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
     pub rent: Sysvar<'info, Rent>,
 }
 
