@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_lang::solana_program::program::invoke;
 use anchor_spl::token::{self, MintTo, Token, TokenAccount, Mint };
 use mpl_token_metadata::instruction::{create_master_edition_v3, create_metadata_accounts_v3, update_metadata_accounts_v2};
-use mpl_token_metadata::state::{DataV2, Metadata, TokenMetadataAccount, PREFIX, EDITION };
+use mpl_token_metadata::state::{Metadata, TokenMetadataAccount, PREFIX, EDITION };
 use solana_program::pubkey;
 
 pub const TIPSEA: Pubkey = pubkey!("8a2z19H17vyQ89rmtR5tATWkGFutJ5gBWre2fthXimHa");
@@ -60,8 +60,6 @@ pub mod tipsea_solana {
             ctx.accounts.mint_authority.to_account_info(),
             ctx.accounts.payer.to_account_info(),
             ctx.accounts.mint_authority.to_account_info(),
-            // ctx.accounts.token_metadata_program.to_account_info(),
-            // ctx.accounts.token_program.to_account_info(),
             ctx.accounts.system_program.to_account_info(),
             ctx.accounts.rent.to_account_info(),
         ];

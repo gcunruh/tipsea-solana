@@ -86,7 +86,7 @@ describe( 'tipsea-nft', async () =>
 
   const NftTokenAccount = await getAssociatedTokenAddress(
     mintKey.publicKey,
-    wallet.publicKey
+    to_wallet.publicKey
   );
 
   // it("initialize tipsea", async() => {
@@ -135,7 +135,7 @@ describe( 'tipsea-nft', async () =>
       createAssociatedTokenAccountInstruction(
         wallet.publicKey,
         NftTokenAccount,
-        wallet.publicKey,
+        to_wallet.publicKey,
         mintKey.publicKey
       )
     );
