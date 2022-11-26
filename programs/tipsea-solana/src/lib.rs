@@ -7,7 +7,6 @@ use mpl_token_metadata::state::{Uses, UseMethod::Single, Metadata, TokenMetadata
 use solana_program::pubkey;
 
 pub const TIPSEA: Pubkey = pubkey!("8a2z19H17vyQ89rmtR5tATWkGFutJ5gBWre2fthXimHa");
-// pub const TIPSEA_COLLECTION: Pubkey = pubkey!("8a2z19H17vyQ89rmtR5tATWkGFutJ5gBWre2fthXimHa");
 
 declare_id!("Bw9yuLw62jk9Z2gjtNm8wdKkoYLZdPfJgDUrRNkTPVxM");
 
@@ -275,6 +274,37 @@ pub mod tipsea_solana {
         Ok(())
     }
 
+    pub fn withdraw(
+        ctx: Context<Withdraw>,
+        bump: u8,
+        amount: u64
+    ) -> Result<()> {
+        let authority = &mut ctx.accounts.authority;
+        if *authority.key != TIPSEA {
+            return Err(ErrorCode::Unauthorized.into());
+        }
+
+        // redeeming with USDC
+        token::transfer(
+            CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                token::Transfer {
+                    from: ctx.accounts.fund.to_account_info(),
+                    to: ctx.accounts.to_account.to_account_info(),
+                    authority: ctx.accounts.fund.to_account_info(),
+                },
+                &[&[
+                    b"fund".as_ref(),
+                    &ctx.accounts.token_mint.key().as_ref(),
+                    &[bump],
+                ]],
+            ),
+            amount
+        )?;
+        
+        Ok(())
+    }
+
 }
 
 
@@ -370,14 +400,19 @@ pub struct Redeem<'info> {
 
 #[derive(Accounts)]
 pub struct Withdraw<'info> {
-    #[account(mut)]
-    pub sender: Signer<'info>,
+    #[account(constraint = *authority.key == TIPSEA)]
+    pub authority: Signer<'info>,
     /// CHECK: This is not dangerous because we don't read or write from this account
     #[account(mut)]
-    pub from: UncheckedAccount<'info>,
+    pub to_account: UncheckedAccount<'info>,
     /// CHECK: This is not dangerous because we don't read or write from this account
-    #[account(mut)]
-    pub receiver: UncheckedAccount<'info>,
+    #[account(
+        mut,
+        seeds = [b"fund", token_mint.key().as_ref()],
+        bump
+    )]
+    pub fund: Account<'info, TokenAccount>,
+    pub token_mint: Account<'info, Mint>,
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
     pub rent: Sysvar<'info, Rent>,
@@ -405,5 +440,8 @@ pub enum ErrorCode {
 
     #[msg("Creator is not verified")]
     CreatorNotVerified,
+
+    #[msg("Unauthorized")]
+    Unauthorized,
 
 }

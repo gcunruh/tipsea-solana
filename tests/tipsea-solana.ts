@@ -218,7 +218,35 @@ describe( 'tipsea-nft', async () =>
     );
 
     await provider.sendAndConfirm( tx, [to_wallet] );
-    console.log( "Success!", tx );
+    console.log( "Redeemed!", tx );
+  } );
+
+  it( "withdraw", async () =>
+  {
+    console.log( "Withdrawing..." );
+
+    let tx = new anchor.web3.Transaction();
+
+    tx.add(
+      await program.methods
+        .withdraw(
+          _fundBump,
+          new anchor.BN(1000000000)
+        )
+        .accounts( {
+          authority: provider.wallet.publicKey,
+          toAccount: fromAta,
+          fund: fundPda,
+          tokenMint: HERA_USDC_MINT,
+          systemProgram: anchor.web3.SystemProgram.programId,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+        } )
+        .instruction()
+    );
+
+    await provider.sendAndConfirm( tx );
+    console.log( "Withdrew!", tx );
   } );
 
 
