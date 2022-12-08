@@ -2,8 +2,8 @@ use anchor_lang::prelude::*;
 use anchor_lang::solana_program::program::invoke;
 use anchor_spl::token::{self, MintTo, Token, TokenAccount, Mint };
 use anchor_spl::associated_token::AssociatedToken;
-use mpl_token_metadata::instruction::{create_master_edition_v3, create_metadata_accounts_v3, update_metadata_accounts_v2, utilize};
-use mpl_token_metadata::state::{Uses, UseMethod::Single, Metadata, TokenMetadataAccount, PREFIX, EDITION };
+use mpl_token_metadata::instruction::{create_master_edition_v3, create_metadata_accounts_v3, update_metadata_accounts_v2, utilize, set_and_verify_collection, sign_metadata};
+use mpl_token_metadata::state::{Uses, UseMethod::Single, Metadata, TokenMetadataAccount, PREFIX };
 use solana_program::pubkey;
 
 pub const TIPSEA: Pubkey = pubkey!("8a2z19H17vyQ89rmtR5tATWkGFutJ5gBWre2fthXimHa");
@@ -16,7 +16,6 @@ pub mod tipsea_solana {
     use super::*;
 
     pub fn initialize_tipsea(_ctx: Context<InitializeTipsea>) -> Result<()> {
-
         Ok(())
     }
 
@@ -86,14 +85,6 @@ pub mod tipsea_solana {
             total: 1
         };
 
-        // let collection = 
-        // mpl_token_metadata::state::Collection {
-        //     verified: false,
-        //     key: collection_key,
-        // };
-
-        // msg!("Collection assigned!");
-
         invoke(
             &create_metadata_accounts_v3(
                 ctx.accounts.token_metadata_program.key(),
@@ -160,6 +151,47 @@ pub mod tipsea_solana {
                 ctx.accounts.metadata.to_account_info(),
                 ctx.accounts.mint_authority.to_account_info(),
             ],
+        )?;
+
+        let set_verified_creator_info = vec![
+            ctx.accounts.token_metadata_program.to_account_info(),
+            ctx.accounts.metadata.to_account_info(),
+            ctx.accounts.tipsea_admin.to_account_info()
+        ];
+
+        invoke(
+            &sign_metadata(
+                ctx.accounts.token_metadata_program.key(),
+                ctx.accounts.metadata.key(),
+                TIPSEA
+            ),
+            &set_verified_creator_info.as_slice()
+        )?;
+        msg!("Verified Creator!");
+
+        let set_and_verify_collection_info = vec![
+            ctx.accounts.metadata.to_account_info(),
+            ctx.accounts.tipsea_admin.to_account_info(),
+            ctx.accounts.mint_authority.to_account_info(),
+            ctx.accounts.tipsea_admin.to_account_info(),
+            ctx.accounts.collection_mint.to_account_info(),
+            ctx.accounts.collection_metadata.to_account_info(),
+            ctx.accounts.collection_master_edition.to_account_info()
+        ];
+
+        invoke(
+            &set_and_verify_collection(
+                ctx.accounts.token_metadata_program.key(),
+                ctx.accounts.metadata.key(),
+                ctx.accounts.tipsea_admin.key(),
+                ctx.accounts.mint_authority.key(),
+                ctx.accounts.tipsea_admin.key(),
+                ctx.accounts.collection_mint.key(),
+                ctx.accounts.collection_metadata.key(),
+                ctx.accounts.collection_master_edition.key(),
+                None
+            ),
+            set_and_verify_collection_info.as_slice()
         )?;
 
         Ok(())
@@ -357,6 +389,17 @@ pub struct CreateTipsea<'info> {
     /// CHECK: This is not dangerous because we don't read or write from this account
     #[account(mut)]
     pub master_edition: UncheckedAccount<'info>,
+    /// CHECK: This is not dangerous because we don't read or write from this account
+    #[account(mut)]
+    pub collection_mint: UncheckedAccount<'info>,
+    /// CHECK: This is not dangerous because we don't read or write from this account
+    #[account(mut)]
+    pub collection_metadata: UncheckedAccount<'info>,
+    /// CHECK: This is not dangerous because we don't read or write from this account
+    #[account(mut)]
+    pub collection_master_edition: UncheckedAccount<'info>,
+    #[account(mut)]
+    pub tipsea_admin: Signer<'info>
 }
 
 #[derive(Accounts)]

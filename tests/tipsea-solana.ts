@@ -19,6 +19,7 @@ const to_wallet = Keypair.fromSecretKey(
 const HERA_USDC_MINT = new PublicKey( "5kU3fkzBcmpirSbjDY99QqQ3Zq8ABks1JMzZxAVx16Da" );
 const TOKEN_METADATA_PROGRAM_ID = new PublicKey( PROGRAM_ADDRESS );
 const TIPSEA = new PublicKey( "8a2z19H17vyQ89rmtR5tATWkGFutJ5gBWre2fthXimHa" );
+const TIPSEA_COLLECTION = new PublicKey("qor5tce6YX9rDnk6TtsgWYZQe29DW49Psd1uXXExiQp");
 
 describe( 'tipsea-nft', async () =>
 {
@@ -71,6 +72,8 @@ describe( 'tipsea-nft', async () =>
   let NftTokenAccount: anchor.web3.PublicKey;
   let metadataAddress: anchor.web3.PublicKey;
   let masterEdition: anchor.web3.PublicKey;
+  let collectionMetadataAddress: anchor.web3.PublicKey;
+  let collectionMasterEdition: anchor.web3.PublicKey;
 
   before( 'prep values', async () =>
   {
@@ -91,6 +94,8 @@ describe( 'tipsea-nft', async () =>
 
     metadataAddress = await getMetadata( mintKey.publicKey );
     masterEdition = await getMasterEdition( mintKey.publicKey );
+    collectionMetadataAddress = await getMetadata( TIPSEA_COLLECTION);
+    collectionMasterEdition = await getMasterEdition( TIPSEA_COLLECTION);
 
     const lamports: number =
       await program.provider.connection.getMinimumBalanceForRentExemption(
@@ -175,6 +180,10 @@ describe( 'tipsea-nft', async () =>
           systemProgram: anchor.web3.SystemProgram.programId,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
           masterEdition: masterEdition,
+          collectionMint: TIPSEA_COLLECTION,
+          collectionMetadata: collectionMetadataAddress,
+          collectionMasterEdition: collectionMasterEdition,
+          tipseaAdmin: wallet.publicKey
         },
         ).instruction() );
 
