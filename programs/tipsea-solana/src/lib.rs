@@ -239,20 +239,14 @@ pub mod tipsea_solana {
 
         let expected_creator = TIPSEA;        
             
-        //Verify creator is present in metadata
-        //NOTE: The first address in 'creators' is the Candy Machine Address
-        // Therefore, the expected_creator should be the Candy Machine Address here
-        //NOTE: May want to use updateAuthority field if CMA is not known in advance?
+        //Verify creator is present and verified in metadata
         assert_eq!(
             full_metadata_clone.data.creators.as_ref().unwrap()[0].address,
             expected_creator
         );
-
-        // //check if creator is verified
-        // if !full_metadata_clone.data.creators.unwrap()[0].verified {
-        //     //return error as creator is not verified 
-        //     return Err(ErrorCode::CreatorNotVerified.into());
-        // };
+        if !full_metadata_clone.data.creators.unwrap()[0].verified {
+            return Err(ErrorCode::CreatorNotVerified.into());
+        };
 
         // reduce utilize
         let account_info = vec![
