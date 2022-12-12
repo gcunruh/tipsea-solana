@@ -16,7 +16,7 @@ const to_wallet = Keypair.fromSecretKey(
   Uint8Array.from( to_pk )
 );
 
-const HERA_USDC_MINT = new PublicKey( "5kU3fkzBcmpirSbjDY99QqQ3Zq8ABks1JMzZxAVx16Da" );
+const HERA_USDC_MINT = new PublicKey( "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" );
 const TOKEN_METADATA_PROGRAM_ID = new PublicKey( PROGRAM_ADDRESS );
 const TIPSEA = new PublicKey( "8a2z19H17vyQ89rmtR5tATWkGFutJ5gBWre2fthXimHa" );
 const TIPSEA_COLLECTION = new PublicKey("qor5tce6YX9rDnk6TtsgWYZQe29DW49Psd1uXXExiQp");
@@ -136,127 +136,127 @@ describe( 'tipsea-nft', async () =>
 
   } );
 
-  // it("initialize tipsea", async() => {
-  //   console.log("Initializing...");
+  it("initialize tipsea", async() => {
+    console.log("Initializing...");
+    let tx = new anchor.web3.Transaction();
+
+    tx.add(
+      await program.methods
+        .initializeTipsea()
+        .accounts({
+          initializer: provider.wallet.publicKey,
+          fund: fundPda,
+          mint: HERA_USDC_MINT
+        })
+        .instruction()
+    );
+
+    await provider.sendAndConfirm(tx);
+    console.log("Initialized!");
+  })
+
+  // it( "mint nft", async () =>
+  // {
+
+  //   let tx = new anchor.web3.Transaction();
+
+  //   tx.add(
+  //     await program.methods.createTipsea(
+  //       "https://tipsea.s3.us-west-2.amazonaws.com/metadata/test_metadata.json",
+  //       "Martini",
+  //       "MAR",
+  //       TIPSEA
+  //     )
+  //       .accounts( {
+  //         mintAuthority: wallet.publicKey,
+  //         mint: mintKey.publicKey,
+  //         tokenAccount: NftTokenAccount,
+  //         tokenProgram: TOKEN_PROGRAM_ID,
+  //         metadata: metadataAddress,
+  //         tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
+  //         payer: wallet.publicKey,
+  //         fromAccount: fromAta,
+  //         fund: fundPda,
+  //         systemProgram: anchor.web3.SystemProgram.programId,
+  //         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+  //         masterEdition: masterEdition,
+  //         collectionMint: TIPSEA_COLLECTION,
+  //         collectionMetadata: collectionMetadataAddress,
+  //         collectionMasterEdition: collectionMasterEdition,
+  //         tipseaAdmin: wallet.publicKey
+  //       },
+  //       ).instruction() );
+
+  //   const final = await program.provider.sendAndConfirm( tx );
+
+  //   console.log( "Done!", final );
+  // } );
+
+  // it( "redeem", async () =>
+  // {
+  //   console.log( "Redeeming..." );
+
+  //   const toAta = await getOrCreateAssociatedTokenAccount(
+  //     provider.connection,
+  //     to_wallet,
+  //     HERA_USDC_MINT,
+  //     to_wallet.publicKey
+  //   );
+
   //   let tx = new anchor.web3.Transaction();
 
   //   tx.add(
   //     await program.methods
-  //       .initializeTipsea()
-  //       .accounts({
-  //         initializer: provider.wallet.publicKey,
+  //       .redeem(
+  //         _fundBump
+  //       )
+  //       .accounts( {
+  //         signer: to_wallet.publicKey,
+  //         toAccount: toAta.address,
+  //         tokenMint: HERA_USDC_MINT,
   //         fund: fundPda,
-  //         mint: HERA_USDC_MINT
-  //       })
+  //         mint: mintKey.publicKey,
+  //         tokenAccount: NftTokenAccount,
+  //         metadataAccount: metadataAddress,
+  //         tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
+  //         systemProgram: anchor.web3.SystemProgram.programId,
+  //         tokenProgram: TOKEN_PROGRAM_ID,
+  //         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+  //       } )
   //       .instruction()
   //   );
 
-  //   await provider.sendAndConfirm(tx);
-  //   console.log("Initialized!");
-  // })
+  //   await provider.sendAndConfirm( tx, [to_wallet] );
+  //   console.log( "Redeemed!", tx );
+  // } );
 
-  it( "mint nft", async () =>
-  {
+  // it( "withdraw", async () =>
+  // {
+  //   console.log( "Withdrawing..." );
 
-    let tx = new anchor.web3.Transaction();
+  //   let tx = new anchor.web3.Transaction();
 
-    tx.add(
-      await program.methods.createTipsea(
-        "https://tipsea.s3.us-west-2.amazonaws.com/metadata/test_metadata.json",
-        "Martini",
-        "MAR",
-        TIPSEA
-      )
-        .accounts( {
-          mintAuthority: wallet.publicKey,
-          mint: mintKey.publicKey,
-          tokenAccount: NftTokenAccount,
-          tokenProgram: TOKEN_PROGRAM_ID,
-          metadata: metadataAddress,
-          tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
-          payer: wallet.publicKey,
-          fromAccount: fromAta,
-          fund: fundPda,
-          systemProgram: anchor.web3.SystemProgram.programId,
-          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-          masterEdition: masterEdition,
-          collectionMint: TIPSEA_COLLECTION,
-          collectionMetadata: collectionMetadataAddress,
-          collectionMasterEdition: collectionMasterEdition,
-          tipseaAdmin: wallet.publicKey
-        },
-        ).instruction() );
+  //   tx.add(
+  //     await program.methods
+  //       .withdraw(
+  //         _fundBump,
+  //         new anchor.BN(1000000000)
+  //       )
+  //       .accounts( {
+  //         authority: provider.wallet.publicKey,
+  //         toAccount: fromAta,
+  //         fund: fundPda,
+  //         tokenMint: HERA_USDC_MINT,
+  //         systemProgram: anchor.web3.SystemProgram.programId,
+  //         tokenProgram: TOKEN_PROGRAM_ID,
+  //         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+  //       } )
+  //       .instruction()
+  //   );
 
-    const final = await program.provider.sendAndConfirm( tx );
-
-    console.log( "Done!", final );
-  } );
-
-  it( "redeem", async () =>
-  {
-    console.log( "Redeeming..." );
-
-    const toAta = await getOrCreateAssociatedTokenAccount(
-      provider.connection,
-      to_wallet,
-      HERA_USDC_MINT,
-      to_wallet.publicKey
-    );
-
-    let tx = new anchor.web3.Transaction();
-
-    tx.add(
-      await program.methods
-        .redeem(
-          _fundBump
-        )
-        .accounts( {
-          signer: to_wallet.publicKey,
-          toAccount: toAta.address,
-          tokenMint: HERA_USDC_MINT,
-          fund: fundPda,
-          mint: mintKey.publicKey,
-          tokenAccount: NftTokenAccount,
-          metadataAccount: metadataAddress,
-          tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
-          systemProgram: anchor.web3.SystemProgram.programId,
-          tokenProgram: TOKEN_PROGRAM_ID,
-          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-        } )
-        .instruction()
-    );
-
-    await provider.sendAndConfirm( tx, [to_wallet] );
-    console.log( "Redeemed!", tx );
-  } );
-
-  it( "withdraw", async () =>
-  {
-    console.log( "Withdrawing..." );
-
-    let tx = new anchor.web3.Transaction();
-
-    tx.add(
-      await program.methods
-        .withdraw(
-          _fundBump,
-          new anchor.BN(1000000000)
-        )
-        .accounts( {
-          authority: provider.wallet.publicKey,
-          toAccount: fromAta,
-          fund: fundPda,
-          tokenMint: HERA_USDC_MINT,
-          systemProgram: anchor.web3.SystemProgram.programId,
-          tokenProgram: TOKEN_PROGRAM_ID,
-          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-        } )
-        .instruction()
-    );
-
-    await provider.sendAndConfirm( tx );
-    console.log( "Withdrew!", tx );
-  } );
+  //   await provider.sendAndConfirm( tx );
+  //   console.log( "Withdrew!", tx );
+  // } );
 
 
 } );
