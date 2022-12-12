@@ -2,10 +2,12 @@
 seeds = false
 [programs.devnet]
 tipsea_solana = "Bw9yuLw62jk9Z2gjtNm8wdKkoYLZdPfJgDUrRNkTPVxM"
+[programs.mainnet]
+tipsea_solana = "Bw9yuLw62jk9Z2gjtNm8wdKkoYLZdPfJgDUrRNkTPVxM"
 [registry]
 url = "https://anchor.projectserum.com"
 [provider]
-cluster = "devnet"
+cluster = "mainnet"
 wallet = "/Volumes/SecureKey/Files/tipsea_prog.json"
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"

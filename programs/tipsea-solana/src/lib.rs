@@ -38,7 +38,7 @@ pub mod tipsea_solana {
                     authority: ctx.accounts.mint_authority.to_account_info(),
                 },
             ),
-            8000000000
+            8000000
         )?;
 
         let cpi_accounts =  MintTo {
@@ -294,7 +294,7 @@ pub mod tipsea_solana {
                     &[bump],
                 ]],
             ),
-            7000000000
+            7000000
         )?;
         
         Ok(())
